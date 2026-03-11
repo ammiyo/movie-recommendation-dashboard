@@ -1,0 +1,391 @@
+/* =========================================================
+   Movie Analytics Dashboard — Dark Cinema Theme
+   static/css/style.css
+   ========================================================= */
+
+/* ---------- Reset & Base ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  background-color: #0f0f0f;
+  color: #e8e8e8;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ---------- Sidebar ---------- */
+.sidebar {
+  background-color: #141414 !important;
+  border-right: 1px solid #2a2a2a !important;
+}
+
+.sidebar .logo {
+  color: #e50914 !important;
+}
+
+.sidebar .nav-link {
+  color: #aaa !important;
+}
+
+.sidebar .nav-link:hover,
+.sidebar .nav-link.active {
+  background: rgba(229, 9, 20, .12) !important;
+  color: #e50914 !important;
+}
+
+/* ---------- Main content ---------- */
+.main-content {
+  padding: 24px 28px;
+}
+
+/* ---------- Dashboard title ---------- */
+.dashboard-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 2px;
+}
+
+#updateTime {
+  font-size: 0.75rem;
+  color: #777;
+  display: block;
+  margin-bottom: 20px;
+}
+
+/* ---------- Section headings ---------- */
+.section-heading {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin: 28px 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+/* ---------- KPI Cards ---------- */
+.kpi-card {
+  background: #1c1c1c !important;
+  border: 1px solid #2a2a2a !important;
+  border-radius: 10px !important;
+  padding: 18px 20px !important;
+  transition: border-color .2s !important;
+}
+
+.kpi-card:hover {
+  border-color: #e50914 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.kpi-icon {
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 8px !important;
+  font-size: 1rem !important;
+  margin-bottom: 12px !important;
+}
+
+.kpi-value {
+  font-size: 1.7rem !important;
+  font-weight: 700 !important;
+}
+
+.kpi-label {
+  font-size: 0.72rem !important;
+  color: #777 !important;
+}
+
+/* ---------- Filter box ---------- */
+.filter-box {
+  background: #1c1c1c;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.filter-box label {
+  font-size: 0.75rem;
+  color: #777;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.filter-box .form-control,
+.filter-box .form-select {
+  background: #111 !important;
+  border: 1px solid #333 !important;
+  color: #e8e8e8 !important;
+  border-radius: 6px !important;
+  font-size: 0.85rem !important;
+  padding: 7px 10px !important;
+}
+
+.filter-box .form-control:focus,
+.filter-box .form-select:focus {
+  border-color: #e50914 !important;
+  box-shadow: none !important;
+  outline: none;
+}
+
+.filter-box .form-select option {
+  background: #111;
+}
+
+.btn-search {
+  background: #e50914;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 18px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-search:hover {
+  background: #c00712;
+}
+
+.btn-reset {
+  background: transparent;
+  color: #aaa;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.btn-reset:hover {
+  border-color: #555;
+  color: #ccc;
+}
+
+/* ---------- Chart cards ---------- */
+.chart-card {
+  background: #1c1c1c !important;
+  border: 1px solid #2a2a2a !important;
+  border-radius: 10px !important;
+  padding: 16px 18px !important;
+  height: 100%;
+}
+
+.chart-card:hover {
+  box-shadow: none !important;
+}
+
+.chart-card .chart-title {
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+  color: #ccc !important;
+  margin-bottom: 14px !important;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.chart-card .chart-title i {
+  color: #e50914 !important;
+}
+
+.chart-card canvas {
+  max-height: 260px !important;
+}
+
+/* ---------- Search results table ---------- */
+.search-results-card {
+  background: #1c1c1c;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 20px;
+}
+
+.table {
+  color: #e8e8e8 !important;
+}
+
+.table thead th {
+  color: #777 !important;
+  border-color: #2a2a2a !important;
+  font-weight: 500;
+  font-size: 0.8rem;
+}
+
+.table tbody tr {
+  border-color: #2a2a2a !important;
+}
+
+.table tbody tr:hover {
+  background: rgba(255, 255, 255, .03);
+}
+
+/* ---------- Scrollbar ---------- */
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f0f0f;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a2a2a;
+  border-radius: 3px;
+}
+
+/* ---------- Chart container height ---------- */
+.chart-card canvas {
+  max-height: 340px !important;
+}
+
+.chart-card {
+  min-height: 380px;
+}
+
+/* ---------- Row spacing between chart sections ---------- */
+.row.g-3 {
+  margin-bottom: 25px;
+}
+
+/* ---------- Hero banner ---------- */
+.hero-banner {
+  width: 100%;
+  height: 270px;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 24px;
+  background-image: url('/static/images/cinema_banner.jpg');
+  background-size: cover;
+  background-position: center;
+}
+
+.hero-banner .hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.62);
+}
+
+.hero-banner .hero-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+}
+
+.hero-banner .hero-text .hero-box {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 24px 36px;
+  max-width: 580px;
+}
+
+.hero-banner h1 {
+  font-size: clamp(1.25rem, 2.5vw, 1.9rem);
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 8px;
+}
+
+.hero-banner p {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+}
+
+/* ---------- Movie Insight Panel ---------- */
+.insight-panel {
+  background: #1c1c1c;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
+.insight-panel h6 {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  margin-bottom: 12px;
+}
+
+.insight-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.insight-input-row input {
+  flex: 1;
+  min-width: 220px;
+  background: #111;
+  border: 1px solid #333;
+  color: #e8e8e8;
+  border-radius: 6px;
+  padding: 7px 12px;
+  font-size: 0.85rem;
+}
+
+.insight-input-row input:focus {
+  border-color: #e50914;
+  outline: none;
+}
+
+#insightResult {
+  display: none;
+  background: #111;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 0.85rem;
+  color: #e8e8e8;
+}
+
+#insightResult .insight-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+#insightResult .insight-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  color: #aaa;
+}
+
+#insightResult .insight-meta span strong {
+  color: #e8e8e8;
+}
+
+#insightNotFound {
+  display: none;
+  color: #777;
+  font-size: 0.85rem;
+  padding-top: 6px;
+}
