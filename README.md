@@ -116,7 +116,10 @@ Source: [GroupLens MovieLens Dataset](https://grouplens.org/datasets/movielens/1
 
 ## Author
 
-**Pratham Debnath**
-MCA Student
-Data Analytics / Cybersecurity Enthusiast
+**Ammiyo Paul**
+<br> MCA Student
+<br> Data Analytics / Cybersecurity Enthusiast
 
+## Co-Author
+
+Co-authored-by: @isthatpratham <premdebnath08@gmail.com>   
