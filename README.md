@@ -2,6 +2,8 @@
 
 A web-based analytics platform for exploring the **MovieLens 100K** dataset. It provides interactive visualizations, cross-filtering, and drill-downs so you can analyze movie ratings, genre trends, and user behavior in one place.
 
+![Dashboard Preview](screenshots/screenshot1.png)
+
 ## Features
 
 ### Core analytics
