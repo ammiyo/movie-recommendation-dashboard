@@ -762,6 +762,22 @@ body.light-theme .insight-skeleton { background: linear-gradient(90deg, rgba(0,0
     max-height: 320px;
 }
 
+.chart-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 160px;
+    width: 100%;
+    color: var(--text-secondary);
+    font-size: var(--font-chart);
+    text-align: center;
+    padding: 16px;
+}
+
+.chart-empty[hidden] {
+    display: none;
+}
+
 /* ---------- Treemap ---------- */
 .treemap-container {
     display: flex;
