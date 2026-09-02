@@ -32,6 +32,48 @@ Chart.defaults.transition = {
     duration: 400,
 };
 
+function isLightTheme() {
+    return document.body.classList.contains("light-theme");
+}
+
+function getChartTheme() {
+    if (isLightTheme()) {
+        return {
+            tick: "#5C5E6B",
+            grid: "rgba(0,0,0,0.08)",
+            border: "rgba(0,0,0,0.12)",
+            label: "#1A1D29",
+            quadrantLine: "rgba(0,0,0,0.25)",
+            quadrantText: "rgba(26, 29, 41, 0.55)",
+        };
+    }
+    return {
+        tick: COLORS.textSecondary,
+        grid: "rgba(255,255,255,0.06)",
+        border: "rgba(255,255,255,0.08)",
+        label: COLORS.textPrimary,
+        quadrantLine: "rgba(255,255,255,0.25)",
+        quadrantText: "rgba(255,255,255,0.4)",
+    };
+}
+
+function applyChartTheme() {
+    const theme = getChartTheme();
+    Chart.defaults.color = theme.tick;
+    Chart.defaults.borderColor = theme.border;
+    Object.keys(chartInstances).forEach((id) => {
+        const chart = chartInstances[id];
+        if (!chart || !chart.options) return;
+        const scales = chart.options.scales || {};
+        Object.keys(scales).forEach((axis) => {
+            if (scales[axis].grid) scales[axis].grid.color = theme.grid;
+            if (scales[axis].ticks) scales[axis].ticks.color = theme.tick;
+            if (scales[axis].title) scales[axis].title.color = theme.tick;
+        });
+        chart.update("none");
+    });
+}
+
 const PALETTE = [
     COLORS.primary,
     COLORS.secondary,
@@ -64,6 +106,24 @@ function buildQueryString() {
     return q.toString();
 }
 
+function debounce(fn, wait) {
+    let timer = null;
+    const wrapped = function (...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+            timer = null;
+            fn.apply(this, args);
+        }, wait);
+    };
+    wrapped.cancel = function () {
+        clearTimeout(timer);
+        timer = null;
+    };
+    return wrapped;
+}
+
+const debouncedRefreshAllCharts = debounce(refreshAllCharts, 350);
+
 function setCrossFilterGenre(genre) {
     const el = document.getElementById("genreFilter");
     if (el) { el.value = genre || ""; refreshAllCharts(); }
@@ -75,7 +135,7 @@ function setCrossFilterYearRange(min, max) {
     if (yMax) yMax.value = max || "";
     refreshAllCharts();
 }
-function setCrossFilterRating(value) {
+function setCrossFilterRating(value, shouldRefresh) {
     const el = document.getElementById("ratingValueFilter");
     const badge = document.getElementById("ratingFilterBadge");
     const label = document.getElementById("ratingFilterLabel");
@@ -88,13 +148,14 @@ function setCrossFilterRating(value) {
             badge.style.display = "none";
         }
     }
-    refreshAllCharts();
+    if (shouldRefresh !== false) refreshAllCharts();
 }
 function clearCrossFilterRating() {
     setCrossFilterRating("");
 }
 
 function resetAllFilters() {
+    debouncedRefreshAllCharts.cancel();
     const genreFilter = document.getElementById("genreFilter");
     const yearMin = document.getElementById("yearMin");
     const yearMax = document.getElementById("yearMax");
@@ -107,7 +168,7 @@ function resetAllFilters() {
         minRatingSlider.value = "10";
         if (minRatingValue) minRatingValue.textContent = "10";
     }
-    clearCrossFilterRating();
+    setCrossFilterRating("", false);
     activeCrossFilterGenre = null;
     refreshAllCharts();
 }
@@ -234,6 +295,7 @@ function showLoading(show) {
     if (el) {
         el.classList.toggle("show", !!show);
         el.setAttribute("aria-hidden", !show);
+        el.setAttribute("aria-busy", show ? "true" : "false");
     }
 }
 
@@ -310,10 +372,13 @@ async function loadFilterOptions() {
 }
 
 // ── Movie detail panel ──────────────────────────────────────────────────────
+let lastMovieTrigger = null;
+
 async function openMovieDetail(movieId) {
     const panel = document.getElementById("movieDetailPanel");
     const backdrop = document.getElementById("movieDetailBackdrop");
     if (!panel || !backdrop) return;
+    lastMovieTrigger = document.activeElement;
     try {
         const detail = await fetchJson("/api/movie-detail/" + movieId);
         document.getElementById("movieDetailTitle").textContent = detail.title;
@@ -326,6 +391,7 @@ async function openMovieDetail(movieId) {
         backdrop.classList.add("show");
         panel.setAttribute("aria-hidden", "false");
         backdrop.setAttribute("aria-hidden", "false");
+        document.getElementById("closeMoviePanel")?.focus();
 
         const [distData, timelineData] = await Promise.all([
             fetchJson("/api/movie-rating-distribution/" + movieId),
@@ -335,9 +401,46 @@ async function openMovieDetail(movieId) {
         requestAnimationFrame(() => {
             requestAnimationFrame(() => renderMovieDetailCharts(distData, timelineData));
         });
+        loadSimilarMovies(movieId);
     } catch (e) {
         console.error("Movie detail error:", e);
     }
+}
+
+function renderSimilarMovies(items) {
+    const list = document.getElementById("similarMoviesList");
+    const empty = document.getElementById("similarMoviesEmpty");
+    if (!list) return;
+    list.innerHTML = "";
+    if (!items || !items.length) {
+        if (empty) empty.style.display = "block";
+        return;
+    }
+    if (empty) empty.style.display = "none";
+    items.forEach((movie) => {
+        const li = document.createElement("li");
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "similar-movie-btn";
+        const year = movie.release_year != null ? " (" + movie.release_year + ")" : "";
+        btn.textContent = movie.title + year;
+        btn.addEventListener("click", () => openMovieDetail(movie.movie_id));
+        li.appendChild(btn);
+        list.appendChild(li);
+    });
+}
+
+function loadSimilarMovies(movieId) {
+    const empty = document.getElementById("similarMoviesEmpty");
+    const list = document.getElementById("similarMoviesList");
+    if (list) list.innerHTML = "";
+    if (empty) empty.style.display = "none";
+    fetchJson("/api/movie-similar/" + movieId)
+        .then((data) => renderSimilarMovies(data.movies || []))
+        .catch((e) => {
+            console.error("Similar movies error:", e);
+            renderSimilarMovies([]);
+        });
 }
 
 function renderMovieDetailCharts(distData, timelineData) {
@@ -375,6 +478,10 @@ function closeMoviePanel() {
     document.getElementById("movieDetailBackdrop")?.classList.remove("show");
     document.getElementById("movieDetailPanel")?.setAttribute("aria-hidden", "true");
     document.getElementById("movieDetailBackdrop")?.setAttribute("aria-hidden", "true");
+    if (lastMovieTrigger && typeof lastMovieTrigger.focus === "function") {
+        lastMovieTrigger.focus();
+    }
+    lastMovieTrigger = null;
 }
 
 // ── Top Rated (horizontal bar, tooltip: title, year, avg, count) ─────────────
@@ -432,7 +539,7 @@ async function renderTopRated() {
                 },
             },
             scales: {
-                x: { grid: { color: "rgba(255,255,255,0.06)" } },
+                x: { grid: { color: getChartTheme().grid } },
                 y: { grid: { display: false } },
             },
         },
@@ -441,7 +548,7 @@ async function renderTopRated() {
             afterDatasetsDraw(chart) {
                 const meta = chart.getDatasetMeta(0);
                 chart.ctx.font = "12px DM Sans";
-                chart.ctx.fillStyle = COLORS.textPrimary;
+                chart.ctx.fillStyle = getChartTheme().label;
                 meta.data.forEach((bar, i) => {
                     chart.ctx.fillText(data.values[i].toFixed(1), bar.x + 8, bar.y + 4);
                 });
@@ -508,7 +615,7 @@ async function renderMostRated() {
                 },
             },
             scales: {
-                x: { grid: { color: "rgba(255,255,255,0.06)" } },
+                x: { grid: { color: getChartTheme().grid } },
                 y: { grid: { display: false } },
             },
         },
@@ -606,7 +713,7 @@ async function renderMoviesPerYear() {
                 },
             },
             scales: {
-                y: { grid: { color: "rgba(255,255,255,0.06)" } },
+                y: { grid: { color: getChartTheme().grid } },
                 x: {
                     grid: { display: false },
                     ticks: { maxTicksLimit: 14, maxRotation: 45 },
@@ -633,11 +740,13 @@ async function renderGenreTreemap() {
     data.labels.forEach((label, i) => {
         const value = data.values[i];
         const pct = total ? ((value / total) * 100).toFixed(1) : 0;
-        const block = document.createElement("div");
+        const block = document.createElement("button");
+        block.type = "button";
         block.className = "treemap-block" + (activeCrossFilterGenre === label ? " cross-filter-active" : "");
         block.style.backgroundColor = PALETTE[i % PALETTE.length] + "dd";
         block.style.flex = value + " 1 0%";
         block.title = label + ": " + value + " movies (" + pct + "%). Click to filter.";
+        block.setAttribute("aria-label", "Filter by genre " + label + ", " + value + " movies");
         block.innerHTML = "<span>" + label + "</span><span style='font-size:11px;opacity:.9'>" + value + " (" + pct + "%)</span>";
         block.addEventListener("click", () => {
             if (activeCrossFilterGenre === label) {
@@ -697,7 +806,7 @@ async function renderAvgGenre() {
             },
             scales: {
                 x: {
-                    grid: { color: "rgba(255,255,255,0.06)" },
+                    grid: { color: getChartTheme().grid },
                 },
                 y: { grid: { display: false } },
             },
@@ -707,7 +816,7 @@ async function renderAvgGenre() {
             afterDatasetsDraw(chart) {
                 const meta = chart.getDatasetMeta(0);
                 chart.ctx.font = "12px DM Sans";
-                chart.ctx.fillStyle = COLORS.textPrimary;
+                chart.ctx.fillStyle = getChartTheme().label;
                 meta.data.forEach((bar, i) => {
                     const value = data.values[i];
                     const x = bar.x + 8;
@@ -782,7 +891,7 @@ async function renderRatingDist() {
                 },
             },
             scales: {
-                y: { grid: { color: "rgba(255,255,255,0.06)" } },
+                y: { grid: { color: getChartTheme().grid } },
                 x: { grid: { display: false } },
             },
         },
@@ -791,7 +900,7 @@ async function renderRatingDist() {
             afterDatasetsDraw(chart) {
                 const meta = chart.getDatasetMeta(0);
                 chart.ctx.font = "11px DM Sans";
-                chart.ctx.fillStyle = COLORS.textPrimary;
+                chart.ctx.fillStyle = getChartTheme().label;
                 meta.data.forEach((bar, i) => {
                     const pct = percentages[i] + "%";
                     const x = bar.x;
@@ -837,8 +946,60 @@ async function renderUserActivity() {
                 },
             },
             scales: {
-                y: { grid: { color: "rgba(255,255,255,0.06)" } },
+                y: { grid: { color: getChartTheme().grid } },
                 x: { grid: { display: false } },
+            },
+        },
+    });
+}
+
+// ── Most active users (horizontal bar, tooltip: count + avg rating given) ───
+async function renderTopUsers() {
+    destroyChart("topUsersChart");
+    const data = await fetchJson(apiUrl("/api/top-users"));
+    if (!hasSeriesData(data)) {
+        showChartMessage("topUsersChart", "No data for current filters.");
+        return;
+    }
+    const avgRatings = data.avg_ratings || [];
+    const ctx = document.getElementById("topUsersChart")?.getContext("2d");
+    if (!ctx) return;
+    chartInstances.topUsersChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: data.labels,
+            datasets: [{
+                label: "Ratings",
+                data: data.values,
+                backgroundColor: COLORS.highlight + "cc",
+                borderColor: COLORS.highlight,
+                borderWidth: 1,
+                borderRadius: 6,
+            }],
+        },
+        options: {
+            indexAxis: "y",
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (item) => {
+                            const i = item.dataIndex;
+                            const avg = avgRatings[i] != null ? avgRatings[i] : "—";
+                            return [
+                                "User: " + (data.labels[i] || ""),
+                                "Total ratings: " + (item.raw != null ? item.raw.toLocaleString() : "—"),
+                                "Average rating given: " + avg,
+                            ];
+                        },
+                    },
+                },
+            },
+            scales: {
+                x: { grid: { color: getChartTheme().grid }, beginAtZero: true },
+                y: { grid: { display: false } },
             },
         },
     });
@@ -889,8 +1050,8 @@ async function renderMovieAgeRating() {
                 },
             },
             scales: {
-                x: { title: { display: true, text: "Release Year" }, grid: { color: "rgba(255,255,255,0.06)" } },
-                y: { title: { display: true, text: "Average Rating" }, grid: { color: "rgba(255,255,255,0.06)" } },
+                x: { title: { display: true, text: "Release Year" }, grid: { color: getChartTheme().grid } },
+                y: { title: { display: true, text: "Average Rating" }, grid: { color: getChartTheme().grid } },
             },
         },
     });
@@ -970,7 +1131,7 @@ async function renderGenreEngagement() {
                 },
             },
             scales: {
-                x: { grid: { color: "rgba(255,255,255,0.06)" } },
+                x: { grid: { color: getChartTheme().grid } },
                 y: { grid: { display: false } },
             },
         },
@@ -1036,12 +1197,12 @@ async function renderBubbleChart() {
             scales: {
                 x: {
                     title: { display: true, text: "Total Ratings" },
-                    grid: { color: "rgba(255,255,255,0.06)" },
+                    grid: { color: getChartTheme().grid },
                     min: 0,
                 },
                 y: {
                     title: { display: true, text: "Average Rating" },
-                    grid: { color: "rgba(255,255,255,0.06)" },
+                    grid: { color: getChartTheme().grid },
                 },
             },
         },
@@ -1061,7 +1222,7 @@ async function renderBubbleChart() {
                 const top = chartArea.top;
                 const bottom = chartArea.bottom;
                 ctx.save();
-                ctx.strokeStyle = "rgba(255,255,255,0.25)";
+                ctx.strokeStyle = getChartTheme().quadrantLine;
                 ctx.lineWidth = 1;
                 ctx.setLineDash([4, 4]);
                 ctx.beginPath();
@@ -1074,7 +1235,7 @@ async function renderBubbleChart() {
                 ctx.stroke();
                 ctx.setLineDash([]);
                 ctx.font = "10px DM Sans";
-                ctx.fillStyle = "rgba(255,255,255,0.4)";
+                ctx.fillStyle = getChartTheme().quadrantText;
                 ctx.textAlign = "center";
                 const pad = 6;
                 ctx.fillText("Blockbusters", (xPixel + right) / 2, (top + yPixel) / 2 - pad);
@@ -1088,7 +1249,14 @@ async function renderBubbleChart() {
 }
 
 // ── Refresh all charts (on filter change) ────────────────────────────────────
+let lastRefreshKey = null;
+let refreshInFlight = false;
+
 async function refreshAllCharts() {
+    const key = buildQueryString();
+    if (refreshInFlight && key === lastRefreshKey) return;
+    lastRefreshKey = key;
+    refreshInFlight = true;
     showLoading(true);
     try {
         await Promise.all([
@@ -1103,18 +1271,22 @@ async function refreshAllCharts() {
             runChartRender("genreEngagementChart", renderGenreEngagement),
             runChartRender("ratingDistChart", renderRatingDist),
             runChartRender("userActivityChart", renderUserActivity),
+            runChartRender("topUsersChart", renderTopUsers),
             runChartRender("genreHeatmap", renderGenreHeatmap),
             runChartRender("bubbleChart", renderBubbleChart),
         ]);
     } catch (e) {
         console.error("Refresh error:", e);
     } finally {
+        refreshInFlight = false;
         showLoading(false);
     }
 }
 
 // ── Movie search autocomplete ─────────────────────────────────────────────────
 let autocompleteTimeout = null;
+let autocompleteItems = [];
+let autocompleteIndex = -1;
 
 async function fetchAutocomplete(query) {
     if (!query || query.length < 2) return [];
@@ -1124,25 +1296,53 @@ async function fetchAutocomplete(query) {
     return (data.movies || []).slice(0, 8);
 }
 
+function setAutocompleteExpanded(open) {
+    const input = document.getElementById("movieSearchInput");
+    if (input) input.setAttribute("aria-expanded", open ? "true" : "false");
+}
+
+function highlightAutocomplete(index) {
+    const dd = document.getElementById("autocompleteDropdown");
+    if (!dd) return;
+    const options = dd.querySelectorAll(".autocomplete-item");
+    options.forEach((el, i) => {
+        el.classList.toggle("active", i === index);
+        if (i === index) el.setAttribute("aria-selected", "true");
+        else el.setAttribute("aria-selected", "false");
+    });
+    const input = document.getElementById("movieSearchInput");
+    if (input && options[index]) input.setAttribute("aria-activedescendant", options[index].id);
+}
+
 function showAutocomplete(items) {
     const dd = document.getElementById("autocompleteDropdown");
     dd.innerHTML = "";
+    autocompleteItems = items || [];
+    autocompleteIndex = -1;
+    const input = document.getElementById("movieSearchInput");
+    if (input) input.removeAttribute("aria-activedescendant");
     if (!items || items.length === 0) {
         dd.classList.remove("show");
+        setAutocompleteExpanded(false);
         return;
     }
-    items.forEach((m) => {
+    items.forEach((m, i) => {
         const div = document.createElement("div");
         div.className = "autocomplete-item";
+        div.id = "autocomplete-option-" + i;
+        div.setAttribute("role", "option");
+        div.setAttribute("aria-selected", "false");
         div.textContent = m.title + (m.release_year ? " (" + m.release_year + ")" : "");
         div.addEventListener("click", () => {
             document.getElementById("movieSearchInput").value = m.title;
             dd.classList.remove("show");
+            setAutocompleteExpanded(false);
             fetchInsight(m.title);
         });
         dd.appendChild(div);
     });
     dd.classList.add("show");
+    setAutocompleteExpanded(true);
 }
 
 function onSearchInput() {
@@ -1151,12 +1351,42 @@ function onSearchInput() {
     clearTimeout(autocompleteTimeout);
     if (!q) {
         document.getElementById("autocompleteDropdown").classList.remove("show");
+        setAutocompleteExpanded(false);
         return;
     }
     autocompleteTimeout = setTimeout(async () => {
         const items = await fetchAutocomplete(q);
         showAutocomplete(items);
     }, 250);
+}
+
+function onSearchKeydown(e) {
+    const dd = document.getElementById("autocompleteDropdown");
+    const open = dd && dd.classList.contains("show") && autocompleteItems.length;
+    if (e.key === "ArrowDown" && open) {
+        e.preventDefault();
+        autocompleteIndex = (autocompleteIndex + 1) % autocompleteItems.length;
+        highlightAutocomplete(autocompleteIndex);
+        return;
+    }
+    if (e.key === "ArrowUp" && open) {
+        e.preventDefault();
+        autocompleteIndex = autocompleteIndex <= 0 ? autocompleteItems.length - 1 : autocompleteIndex - 1;
+        highlightAutocomplete(autocompleteIndex);
+        return;
+    }
+    if (e.key === "Enter") {
+        if (open && autocompleteIndex >= 0) {
+            e.preventDefault();
+            const m = autocompleteItems[autocompleteIndex];
+            document.getElementById("movieSearchInput").value = m.title;
+            dd.classList.remove("show");
+            setAutocompleteExpanded(false);
+            fetchInsight(m.title);
+            return;
+        }
+        runSearch();
+    }
 }
 
 // ── Movie quick insight ──────────────────────────────────────────────────────
@@ -1195,6 +1425,7 @@ document.addEventListener("click", (e) => {
     const dd = document.getElementById("autocompleteDropdown");
     if (wrap && dd && !wrap.contains(e.target)) {
         dd.classList.remove("show");
+        setAutocompleteExpanded(false);
     }
 });
 
@@ -1226,10 +1457,13 @@ function updateSidebarActive() {
 }
 
 // ── Dataset info modal ───────────────────────────────────────────────────────
+let lastDatasetTrigger = null;
+
 async function openDatasetModal() {
     const modal = document.getElementById("datasetModal");
     const body = document.getElementById("datasetModalBody");
     if (!modal || !body) return;
+    lastDatasetTrigger = document.activeElement;
     try {
         const info = await fetchJson("/api/dataset-info");
         body.innerHTML =
@@ -1243,6 +1477,7 @@ async function openDatasetModal() {
     }
     modal.classList.add("show");
     modal.setAttribute("aria-hidden", "false");
+    document.getElementById("closeDatasetModal")?.focus();
 }
 
 function closeDatasetModal() {
@@ -1251,6 +1486,10 @@ function closeDatasetModal() {
         modal.classList.remove("show");
         modal.setAttribute("aria-hidden", "true");
     }
+    if (lastDatasetTrigger && typeof lastDatasetTrigger.focus === "function") {
+        lastDatasetTrigger.focus();
+    }
+    lastDatasetTrigger = null;
 }
 
 // ── Export ──────────────────────────────────────────────────────────────────
@@ -1301,6 +1540,7 @@ function exportChartCSV(chartId, dataEndpoint) {
         "movies-per-year": "/api/movies-per-year",
         "avgGenreChart": "/api/avg-rating-genre",
         "bubbleChart": "/api/movie-popularity-rating-bubble",
+        "topUsersChart": "/api/top-users",
     };
     const path = dataEndpoint ? "/api/" + dataEndpoint : (endpoints[chartId] || "/api/top-rated");
     const url = apiUrl(path);
@@ -1334,10 +1574,50 @@ function exportReport() {
     a.click();
 }
 
+// ── Mobile sidebar ──────────────────────────────────────────────────────────
+function isMobileNav() {
+    return window.matchMedia("(max-width: 768px)").matches;
+}
+
+function setSidebarOpen(open) {
+    const sidebar = document.getElementById("sidebar");
+    const backdrop = document.getElementById("sidebarBackdrop");
+    const toggle = document.getElementById("sidebarToggle");
+    if (!sidebar) return;
+    sidebar.classList.toggle("open", !!open);
+    if (backdrop) {
+        backdrop.classList.toggle("show", !!open);
+        backdrop.setAttribute("aria-hidden", open ? "false" : "true");
+    }
+    if (toggle) {
+        toggle.setAttribute("aria-expanded", open ? "true" : "false");
+        toggle.setAttribute("aria-label", open ? "Close navigation" : "Open navigation");
+    }
+}
+
+function initMobileNav() {
+    const toggle = document.getElementById("sidebarToggle");
+    const backdrop = document.getElementById("sidebarBackdrop");
+    toggle?.addEventListener("click", () => {
+        const sidebar = document.getElementById("sidebar");
+        setSidebarOpen(!sidebar?.classList.contains("open"));
+    });
+    backdrop?.addEventListener("click", () => setSidebarOpen(false));
+    document.querySelectorAll(".sidebar-nav .nav-link").forEach((link) => {
+        link.addEventListener("click", () => {
+            if (isMobileNav()) setSidebarOpen(false);
+        });
+    });
+    window.addEventListener("resize", () => {
+        if (!isMobileNav()) setSidebarOpen(false);
+    });
+}
+
 // ── Theme toggle ────────────────────────────────────────────────────────────
 function initTheme() {
     const stored = localStorage.getItem("dashboard-theme");
     if (stored === "light") document.body.classList.add("light-theme");
+    applyChartTheme();
     const btn = document.getElementById("themeToggle");
     if (btn) {
         btn.addEventListener("click", () => {
@@ -1345,6 +1625,7 @@ function initTheme() {
             const isLight = document.body.classList.contains("light-theme");
             localStorage.setItem("dashboard-theme", isLight ? "light" : "dark");
             btn.querySelector("i").className = isLight ? "bi bi-sun-fill" : "bi bi-moon-stars-fill";
+            applyChartTheme();
         });
         btn.querySelector("i").className = document.body.classList.contains("light-theme") ? "bi bi-sun-fill" : "bi bi-moon-stars-fill";
     }
@@ -1361,33 +1642,38 @@ function initFilters() {
     if (minRatingSlider && minRatingValue) {
         minRatingSlider.addEventListener("input", () => {
             minRatingValue.textContent = minRatingSlider.value;
-            refreshAllCharts();
+            debouncedRefreshAllCharts();
         });
     }
 
-    [genreFilter, yearMin, yearMax].forEach((el) => {
+    if (genreFilter) {
+        genreFilter.addEventListener("change", refreshAllCharts);
+    }
+    [yearMin, yearMax].forEach((el) => {
         if (el) {
-            el.addEventListener("change", refreshAllCharts);
-            el.addEventListener("input", () => {
-                if (el === yearMin || el === yearMax) refreshAllCharts();
-            });
+            el.addEventListener("input", debouncedRefreshAllCharts);
+            el.addEventListener("change", debouncedRefreshAllCharts);
         }
     });
 
     document.getElementById("searchBtn")?.addEventListener("click", runSearch);
     document.getElementById("movieSearchInput")?.addEventListener("input", onSearchInput);
-    document.getElementById("movieSearchInput")?.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") runSearch();
-    });
+    document.getElementById("movieSearchInput")?.addEventListener("keydown", onSearchKeydown);
 
     document.getElementById("datasetInfoBtn")?.addEventListener("click", openDatasetModal);
     document.getElementById("closeDatasetModal")?.addEventListener("click", closeDatasetModal);
     document.getElementById("datasetModal")?.addEventListener("click", (e) => { if (e.target.id === "datasetModal") closeDatasetModal(); });
 
-    document.getElementById("exportBtn")?.addEventListener("click", () => document.querySelector(".export-dropdown")?.classList.toggle("open"));
+    document.getElementById("exportBtn")?.addEventListener("click", () => {
+        const dropdown = document.querySelector(".export-dropdown");
+        const open = !dropdown?.classList.contains("open");
+        dropdown?.classList.toggle("open", open);
+        document.getElementById("exportBtn")?.setAttribute("aria-expanded", open ? "true" : "false");
+    });
     document.querySelectorAll(".export-menu [data-export]").forEach((btn) => {
         btn.addEventListener("click", () => {
             document.querySelector(".export-dropdown")?.classList.remove("open");
+            document.getElementById("exportBtn")?.setAttribute("aria-expanded", "false");
             if (btn.dataset.export === "csv") exportCSV();
             else if (btn.dataset.export === "png") exportPNG();
             else if (btn.dataset.export === "report") exportReport();
@@ -1407,22 +1693,67 @@ function initFilters() {
         if (!btn || !menu || !chartId) return;
         btn.addEventListener("click", (e) => {
             e.stopPropagation();
-            document.querySelectorAll(".chart-export-wrap.open").forEach((w) => { if (w !== wrap) w.classList.remove("open"); });
+            document.querySelectorAll(".chart-export-wrap.open").forEach((w) => {
+                if (w !== wrap) {
+                    w.classList.remove("open");
+                    w.querySelector(".btn-chart-export")?.setAttribute("aria-expanded", "false");
+                }
+            });
             wrap.classList.toggle("open");
+            btn.setAttribute("aria-expanded", wrap.classList.contains("open") ? "true" : "false");
         });
         menu.querySelectorAll("button").forEach((b) => {
             b.addEventListener("click", (e) => {
                 e.stopPropagation();
                 wrap.classList.remove("open");
+                wrap.querySelector(".btn-chart-export")?.setAttribute("aria-expanded", "false");
                 const type = b.getAttribute("data-type");
                 if (type === "png") exportChartPNG(chartId);
                 if (type === "csv") exportChartCSV(chartId, wrap.getAttribute("data-csv"));
             });
         });
     });
-    document.addEventListener("click", () => document.querySelectorAll(".chart-export-wrap.open").forEach((w) => w.classList.remove("open")));
+    document.addEventListener("click", () => document.querySelectorAll(".chart-export-wrap.open").forEach((w) => {
+        w.classList.remove("open");
+        w.querySelector(".btn-chart-export")?.setAttribute("aria-expanded", "false");
+    }));
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape") return;
+        const moviePanel = document.getElementById("movieDetailPanel");
+        if (moviePanel?.classList.contains("show")) {
+            closeMoviePanel();
+            return;
+        }
+        const datasetModal = document.getElementById("datasetModal");
+        if (datasetModal?.classList.contains("show")) {
+            closeDatasetModal();
+            return;
+        }
+        const exportDropdown = document.querySelector(".export-dropdown.open");
+        if (exportDropdown) {
+            exportDropdown.classList.remove("open");
+            document.getElementById("exportBtn")?.setAttribute("aria-expanded", "false");
+            document.getElementById("exportBtn")?.focus();
+            return;
+        }
+        const openChartExport = document.querySelector(".chart-export-wrap.open");
+        if (openChartExport) {
+            openChartExport.classList.remove("open");
+            const exportBtn = openChartExport.querySelector(".btn-chart-export");
+            exportBtn?.setAttribute("aria-expanded", "false");
+            exportBtn?.focus();
+            return;
+        }
+        const dd = document.getElementById("autocompleteDropdown");
+        if (dd?.classList.contains("show")) {
+            dd.classList.remove("show");
+            setAutocompleteExpanded(false);
+        }
+    });
 
     initTheme();
+    initMobileNav();
     window.addEventListener("scroll", updateSidebarActive);
 }
 
@@ -1446,5 +1777,8 @@ async function loadDashboard() {
 
 window.addEventListener("load", loadDashboard);
 document.addEventListener("click", (e) => {
-    if (!e.target.closest(".export-dropdown")) document.querySelector(".export-dropdown")?.classList.remove("open");
+    if (!e.target.closest(".export-dropdown")) {
+        document.querySelector(".export-dropdown")?.classList.remove("open");
+        document.getElementById("exportBtn")?.setAttribute("aria-expanded", "false");
+    }
 });

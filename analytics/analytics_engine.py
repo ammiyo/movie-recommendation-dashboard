@@ -1,6 +1,4 @@
 import pandas as pd
-import mysql.connector
-from mysql.connector import Error
 
 # -------------------------------------------------------
 # Database Configuration
@@ -16,6 +14,13 @@ DB_CONFIG = {
 
 def get_connection():
     """Return a live MySQL connection (used by Flask API layer)."""
+    try:
+        import mysql.connector
+    except ImportError as exc:
+        raise ImportError(
+            "mysql-connector-python is required for database connections. "
+            "Install it with: pip install mysql-connector-python"
+        ) from exc
     return mysql.connector.connect(**DB_CONFIG)
 
 
@@ -59,8 +64,8 @@ def _apply_filters(movies_df, ratings_df, merged_df, genre=None, year_min=None, 
     mg = merged_df.copy()
 
     if genre:
-        m = m[m["genres"].str.contains(genre, case=False, na=False)]
-        mg = mg[mg["genres"].str.contains(genre, case=False, na=False)]
+        m = m[m["genres"].str.contains(genre, case=False, na=False, regex=False)]
+        mg = mg[mg["genres"].str.contains(genre, case=False, na=False, regex=False)]
         r = r[r["movie_id"].isin(m["movie_id"])]
 
     if year_min is not None:
@@ -288,7 +293,7 @@ def search_movies(title="", year=None, genre=""):
     result = stats.copy()
 
     if title:
-        result = result[result["title"].str.contains(title, case=False, na=False)]
+        result = result[result["title"].str.contains(title, case=False, na=False, regex=False)]
 
     if year:
         try:
@@ -297,7 +302,7 @@ def search_movies(title="", year=None, genre=""):
             pass
 
     if genre:
-        result = result[result["genres"].str.contains(genre, case=False, na=False)]
+        result = result[result["genres"].str.contains(genre, case=False, na=False, regex=False)]
 
     result = result.sort_values("avg_rating", ascending=False)
 
@@ -337,7 +342,7 @@ def get_movie_insight(title):
     _, ratings_df, merged = _load_data()
 
     # Find best match (case-insensitive, pick highest rating-count)
-    mask    = merged["title"].str.contains(title, case=False, na=False)
+    mask    = merged["title"].str.contains(title, case=False, na=False, regex=False)
     matched = merged[mask]
 
     if matched.empty:
@@ -592,6 +597,66 @@ def get_movie_popularity_rating_bubble(genre=None, year_min=None, year_max=None,
         "avg_rating": round(float(agg["avg_rating"].mean()), 2),
         "avg_count": int(round(agg["total_ratings"].mean())),
     }
+
+
+def get_similar_movies(movie_id, limit=5):
+    """
+    Return movies that share genres with the selected title.
+    Similarity is Jaccard overlap of genre sets; ties prefer more-rated movies.
+    Returns None if the movie_id is unknown.
+    """
+    movies_df, ratings_df, _ = _load_data()
+    movie_id = int(movie_id)
+    target = movies_df[movies_df["movie_id"] == movie_id]
+    if target.empty:
+        return None
+
+    target_genres = {
+        genre.strip()
+        for genre in str(target.iloc[0].get("genres") or "").split("|")
+        if genre.strip()
+    }
+    if not target_genres:
+        return []
+
+    rating_stats = (
+        ratings_df.groupby("movie_id")["rating"]
+        .agg(total_ratings="count", avg_rating="mean")
+    )
+    candidates = movies_df[movies_df["movie_id"] != movie_id].copy()
+
+    def jaccard(genres_value):
+        genres = {
+            genre.strip()
+            for genre in str(genres_value or "").split("|")
+            if genre.strip()
+        }
+        if not genres:
+            return 0.0
+        union = target_genres | genres
+        return len(target_genres & genres) / len(union) if union else 0.0
+
+    candidates["similarity"] = candidates["genres"].map(jaccard)
+    candidates = candidates[candidates["similarity"] > 0]
+    candidates = candidates.join(rating_stats, on="movie_id")
+    candidates["total_ratings"] = candidates["total_ratings"].fillna(0)
+    candidates["avg_rating"] = candidates["avg_rating"].fillna(0)
+    candidates = candidates.sort_values(
+        ["similarity", "total_ratings"], ascending=False
+    ).head(limit)
+
+    return [
+        {
+            "movie_id": int(row["movie_id"]),
+            "title": str(row["title"]),
+            "release_year": int(row["release_year"]) if pd.notna(row["release_year"]) else None,
+            "genres": str(row["genres"]) if pd.notna(row["genres"]) else "",
+            "avg_rating": round(float(row["avg_rating"]), 2) if row["total_ratings"] else None,
+            "total_ratings": int(row["total_ratings"]),
+            "similarity": round(float(row["similarity"]), 3),
+        }
+        for _, row in candidates.iterrows()
+    ]
 
 
 def get_dataset_info():
