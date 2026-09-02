@@ -38,43 +38,50 @@ A web-based analytics platform for exploring the **MovieLens 100K** dataset. It 
 ## Project structure
 
 ```text
-movie/
+movie-recommendation-dashboard/
 ├── analytics/
-│   ├── analytics_engine.py   # Aggregations and stats (uses CSV data)
-│   └── data_cleaning.py      # Clean/normalize raw MovieLens data
+│   ├── analytics_engine.py         # Aggregations and stats (uses CSV data)
+│   ├── convert_movielens_100k.py   # Optional: convert raw u.data/u.item to CSV
+│   └── data_cleaning.py            # Optional: clean/normalize movies.csv and ratings.csv
 ├── dataset/
-│   ├── clean_movies.csv      # Processed movie metadata
-│   └── clean_ratings.csv     # Processed ratings
+│   ├── clean_movies.csv            # Processed movie metadata (committed)
+│   └── clean_ratings.csv           # Processed ratings (committed)
 ├── static/
-│   ├── css/style.css         # Dashboard and chart styling
-│   └── js/dashboard.js       # Chart.js logic, filters, export, panels
+│   ├── css/style.css               # Dashboard and chart styling
+│   └── js/dashboard.js             # Chart.js logic, filters, export, panels
 ├── templates/
-│   └── dashboard.html        # Main dashboard markup
-├── schema/                   # Optional MySQL schema (if using DB)
-├── database/                 # Optional DB loaders
-└── app.py                    # Flask app and API routes
+│   └── dashboard.html              # Main dashboard markup
+├── schema/                         # Optional MySQL schema (if using DB)
+├── database/                       # Optional DB loaders
+├── screenshots/
+├── app.py                          # Flask app and API routes
+├── requirements.txt
+└── README.md
 ```
 
 ## Installation & setup
 
 1. **Clone the repository**
    ```bash
-   git clone <repo-link>
-   cd movie
+   git clone https://github.com/ammiyo/movie-recommendation-dashboard.git
+   cd movie-recommendation-dashboard
    ```
 
 2. **Install dependencies**
    ```bash
-   pip install flask pandas
+   pip install -r requirements.txt
    ```
-   Optional (if you use MySQL or schema): `mysql-connector-python`
+   MySQL is not required for the dashboard. If you use the optional MySQL loader (`schema/movie_analytics.sql`, `database/load_clean_data.py`), also install `mysql-connector-python`.
 
-3. **Prepare data**  
-   The dashboard reads from the CSV files in `dataset/`. If you don’t have them yet:
+3. **Data**  
+   The dashboard reads `dataset/clean_movies.csv` and `dataset/clean_ratings.csv`. These cleaned files are committed in the repository, so you can run the app immediately after installing dependencies.
+
+   To rebuild them from the original MovieLens 100K files (`dataset/u.data` and `dataset/u.item`), run:
    ```bash
+   python analytics/convert_movielens_100k.py
    python analytics/data_cleaning.py
    ```
-   This produces (or expects) `dataset/clean_movies.csv` and `dataset/clean_ratings.csv` in the format used by the analytics engine.
+   `convert_movielens_100k.py` writes `dataset/ratings.csv` and `dataset/movies.csv`. `data_cleaning.py` then writes the `clean_*.csv` files used by the analytics engine.
 
 4. **Run the app**
    ```bash
