@@ -64,6 +64,24 @@ function buildQueryString() {
     return q.toString();
 }
 
+function debounce(fn, wait) {
+    let timer = null;
+    const wrapped = function (...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+            timer = null;
+            fn.apply(this, args);
+        }, wait);
+    };
+    wrapped.cancel = function () {
+        clearTimeout(timer);
+        timer = null;
+    };
+    return wrapped;
+}
+
+const debouncedRefreshAllCharts = debounce(refreshAllCharts, 350);
+
 function setCrossFilterGenre(genre) {
     const el = document.getElementById("genreFilter");
     if (el) { el.value = genre || ""; refreshAllCharts(); }
@@ -75,7 +93,7 @@ function setCrossFilterYearRange(min, max) {
     if (yMax) yMax.value = max || "";
     refreshAllCharts();
 }
-function setCrossFilterRating(value) {
+function setCrossFilterRating(value, shouldRefresh) {
     const el = document.getElementById("ratingValueFilter");
     const badge = document.getElementById("ratingFilterBadge");
     const label = document.getElementById("ratingFilterLabel");
@@ -88,13 +106,14 @@ function setCrossFilterRating(value) {
             badge.style.display = "none";
         }
     }
-    refreshAllCharts();
+    if (shouldRefresh !== false) refreshAllCharts();
 }
 function clearCrossFilterRating() {
     setCrossFilterRating("");
 }
 
 function resetAllFilters() {
+    debouncedRefreshAllCharts.cancel();
     const genreFilter = document.getElementById("genreFilter");
     const yearMin = document.getElementById("yearMin");
     const yearMax = document.getElementById("yearMax");
@@ -107,7 +126,7 @@ function resetAllFilters() {
         minRatingSlider.value = "10";
         if (minRatingValue) minRatingValue.textContent = "10";
     }
-    clearCrossFilterRating();
+    setCrossFilterRating("", false);
     activeCrossFilterGenre = null;
     refreshAllCharts();
 }
@@ -996,7 +1015,14 @@ async function renderBubbleChart() {
 }
 
 // ── Refresh all charts (on filter change) ────────────────────────────────────
+let lastRefreshKey = null;
+let refreshInFlight = false;
+
 async function refreshAllCharts() {
+    const key = buildQueryString();
+    if (refreshInFlight && key === lastRefreshKey) return;
+    lastRefreshKey = key;
+    refreshInFlight = true;
     showLoading(true);
     try {
         await Promise.all([
@@ -1017,6 +1043,7 @@ async function refreshAllCharts() {
     } catch (e) {
         console.error("Refresh error:", e);
     } finally {
+        refreshInFlight = false;
         showLoading(false);
     }
 }
@@ -1269,16 +1296,17 @@ function initFilters() {
     if (minRatingSlider && minRatingValue) {
         minRatingSlider.addEventListener("input", () => {
             minRatingValue.textContent = minRatingSlider.value;
-            refreshAllCharts();
+            debouncedRefreshAllCharts();
         });
     }
 
-    [genreFilter, yearMin, yearMax].forEach((el) => {
+    if (genreFilter) {
+        genreFilter.addEventListener("change", refreshAllCharts);
+    }
+    [yearMin, yearMax].forEach((el) => {
         if (el) {
-            el.addEventListener("change", refreshAllCharts);
-            el.addEventListener("input", () => {
-                if (el === yearMin || el === yearMax) refreshAllCharts();
-            });
+            el.addEventListener("input", debouncedRefreshAllCharts);
+            el.addEventListener("change", debouncedRefreshAllCharts);
         }
     });
 
