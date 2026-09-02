@@ -42,9 +42,9 @@
                     </div>
                 </div>
                 <div class="header-right header-actions">
-                    <button type="button" class="btn-icon" id="datasetInfoBtn" title="Dataset information"><i class="bi bi-info-circle"></i></button>
+                    <button type="button" class="btn-icon" id="datasetInfoBtn" title="Dataset information" aria-label="Dataset information"><i class="bi bi-info-circle"></i></button>
                     <div class="export-dropdown">
-                        <button type="button" class="btn-export" id="exportBtn"><i class="bi bi-download"></i> Export</button>
+                        <button type="button" class="btn-export" id="exportBtn" aria-haspopup="true" aria-expanded="false" aria-controls="exportMenu"><i class="bi bi-download"></i> Export</button>
                         <div class="export-menu" id="exportMenu">
                             <button type="button" data-export="csv"><i class="bi bi-file-earmark-spreadsheet"></i> Export CSV</button>
                             <button type="button" data-export="png"><i class="bi bi-image"></i> Export Image (PNG)</button>
@@ -61,21 +61,21 @@
 
         <div class="filter-bar">
             <div class="filter-group">
-                <label class="filter-label">Genre</label>
+                <label class="filter-label" for="genreFilter">Genre</label>
                 <select id="genreFilter" class="filter-select">
                     <option value="">All Genres</option>
                 </select>
             </div>
             <div class="filter-group filter-group-wide">
-                <label class="filter-label">Year range</label>
+                <label class="filter-label" id="yearRangeLabel">Year range</label>
                 <div class="range-inputs">
-                    <input type="number" id="yearMin" class="filter-input range-num" placeholder="Min" min="1900" max="2025" />
+                    <input type="number" id="yearMin" class="filter-input range-num" placeholder="Min" min="1900" max="2025" aria-labelledby="yearRangeLabel" aria-label="Minimum year" />
                     <span class="range-sep">–</span>
-                    <input type="number" id="yearMax" class="filter-input range-num" placeholder="Max" min="1900" max="2025" />
+                    <input type="number" id="yearMax" class="filter-input range-num" placeholder="Max" min="1900" max="2025" aria-labelledby="yearRangeLabel" aria-label="Maximum year" />
                 </div>
             </div>
             <div class="filter-group filter-group-wide">
-                <label class="filter-label">Minimum rating (for Top Rated)</label>
+                <label class="filter-label" for="minRatingSlider">Minimum rating (for Top Rated)</label>
                 <input type="range" id="minRatingSlider" class="filter-slider" min="1" max="50" value="10" />
                 <span class="filter-slider-value" id="minRatingValue">10</span> ratings
             </div>
@@ -125,8 +125,8 @@
                 <div class="search-wrap">
                     <div class="search-input-wrap">
                         <i class="bi bi-search search-icon"></i>
-                        <input type="text" id="movieSearchInput" class="search-input" placeholder="Search movie (e.g., Star Wars, Titanic…)" autocomplete="off" />
-                        <div class="autocomplete-dropdown" id="autocompleteDropdown"></div>
+                        <input type="text" id="movieSearchInput" class="search-input" placeholder="Search movie (e.g., Star Wars, Titanic…)" autocomplete="off" aria-label="Search movie by title" aria-autocomplete="list" aria-controls="autocompleteDropdown" aria-expanded="false" />
+                        <div class="autocomplete-dropdown" id="autocompleteDropdown" role="listbox" aria-label="Movie suggestions"></div>
                     </div>
                     <button type="button" class="btn-search" id="searchBtn">Search</button>
                 </div>
@@ -150,7 +150,7 @@
                 <div class="chart-card chart-card-animate">
                     <div class="chart-card-header">
                         <h3 class="chart-title"><i class="bi bi-trophy-fill"></i> Top Rated Movies</h3>
-                        <div class="chart-export-wrap" data-chart="topRatedChart"><button type="button" class="btn-chart-export" title="Export"><i class="bi bi-download"></i></button><div class="chart-export-menu"><button type="button" data-type="png">PNG</button><button type="button" data-type="csv">CSV</button></div></div>
+                        <div class="chart-export-wrap" data-chart="topRatedChart"><button type="button" class="btn-chart-export" title="Export" aria-label="Export Top Rated chart" aria-haspopup="true" aria-expanded="false"><i class="bi bi-download"></i></button><div class="chart-export-menu"><button type="button" data-type="png">PNG</button><button type="button" data-type="csv">CSV</button></div></div>
                     </div>
                     <p class="insight-callout" id="insightTopRated"></p>
                     <p class="chart-hint">Horizontal bar: average rating. Click a bar for movie details.</p>
@@ -159,7 +159,7 @@
                 <div class="chart-card chart-card-animate">
                     <div class="chart-card-header">
                         <h3 class="chart-title"><i class="bi bi-graph-up-arrow"></i> Most Rated Movies</h3>
-                        <div class="chart-export-wrap" data-chart="mostRatedChart"><button type="button" class="btn-chart-export" title="Export"><i class="bi bi-download"></i></button><div class="chart-export-menu"><button type="button" data-type="png">PNG</button><button type="button" data-type="csv">CSV</button></div></div>
+                        <div class="chart-export-wrap" data-chart="mostRatedChart"><button type="button" class="btn-chart-export" title="Export" aria-label="Export Most Rated chart" aria-haspopup="true" aria-expanded="false"><i class="bi bi-download"></i></button><div class="chart-export-menu"><button type="button" data-type="png">PNG</button><button type="button" data-type="csv">CSV</button></div></div>
                     </div>
                     <p class="insight-callout" id="insightMostRated"></p>
                     <p class="chart-hint">Lollipop: total ratings. Click for movie details.</p>
@@ -175,7 +175,7 @@
                 <div class="chart-card chart-card-animate">
                     <div class="chart-card-header">
                         <h3 class="chart-title"><i class="bi bi-calendar3"></i> Movies Released Per Year</h3>
-                        <div class="chart-export-wrap" data-chart="moviesYearChart" data-csv="movies-per-year"><button type="button" class="btn-chart-export" title="Export"><i class="bi bi-download"></i></button><div class="chart-export-menu"><button type="button" data-type="png">PNG</button><button type="button" data-type="csv">CSV</button></div></div>
+                        <div class="chart-export-wrap" data-chart="moviesYearChart" data-csv="movies-per-year"><button type="button" class="btn-chart-export" title="Export" aria-label="Export movies per year chart" aria-haspopup="true" aria-expanded="false"><i class="bi bi-download"></i></button><div class="chart-export-menu"><button type="button" data-type="png">PNG</button><button type="button" data-type="csv">CSV</button></div></div>
                     </div>
                     <p class="chart-annotation" id="moviesYearAnnotation" style="display: none;"></p>
                     <p class="insight-callout" id="insightMoviesYear"></p>
@@ -204,7 +204,7 @@
                 <div class="chart-card chart-card-animate">
                     <div class="chart-card-header">
                         <h3 class="chart-title"><i class="bi bi-bar-chart-line-fill"></i> Average Rating by Genre</h3>
-                        <div class="chart-export-wrap" data-chart="avgGenreChart"><button type="button" class="btn-chart-export" title="Export"><i class="bi bi-download"></i></button><div class="chart-export-menu"><button type="button" data-type="png">PNG</button><button type="button" data-type="csv">CSV</button></div></div>
+                        <div class="chart-export-wrap" data-chart="avgGenreChart"><button type="button" class="btn-chart-export" title="Export" aria-label="Export average rating by genre chart" aria-haspopup="true" aria-expanded="false"><i class="bi bi-download"></i></button><div class="chart-export-menu"><button type="button" data-type="png">PNG</button><button type="button" data-type="csv">CSV</button></div></div>
                     </div>
                     <p class="insight-callout" id="insightAvgGenre"></p>
                     <p class="chart-hint">Color: low (red) to high (green). Sorted by rating.</p>
@@ -261,7 +261,7 @@
                 <div class="chart-card chart-card-animate">
                     <div class="chart-card-header">
                         <h3 class="chart-title"><i class="bi bi-circle-fill"></i> Movie Popularity vs Rating</h3>
-                        <div class="chart-export-wrap" data-chart="bubbleChart"><button type="button" class="btn-chart-export" title="Export"><i class="bi bi-download"></i></button><div class="chart-export-menu"><button type="button" data-type="png">PNG</button><button type="button" data-type="csv">CSV</button></div></div>
+                        <div class="chart-export-wrap" data-chart="bubbleChart"><button type="button" class="btn-chart-export" title="Export" aria-label="Export popularity vs rating chart" aria-haspopup="true" aria-expanded="false"><i class="bi bi-download"></i></button><div class="chart-export-menu"><button type="button" data-type="png">PNG</button><button type="button" data-type="csv">CSV</button></div></div>
                     </div>
                     <p class="chart-hint">Bubble: X = total ratings, Y = avg rating. Quadrants: Blockbusters, Hidden Gems, Overhyped, Unnoticed. Click a bubble for movie details.</p>
                     <div class="chart-container"><canvas id="bubbleChart"></canvas></div>
@@ -270,12 +270,12 @@
         </section>
     </div>
 
-    <div class="loading-overlay" id="loadingOverlay" aria-hidden="true">
+    <div class="loading-overlay" id="loadingOverlay" aria-hidden="true" aria-live="polite" role="status">
         <div class="loading-spinner"></div>
         <span class="loading-text">Updating charts…</span>
     </div>
 
-    <div class="movie-detail-panel" id="movieDetailPanel" aria-hidden="true">
+    <div class="movie-detail-panel" id="movieDetailPanel" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="movieDetailTitle">
         <div class="movie-detail-header">
             <h3 class="movie-detail-title" id="movieDetailTitle">—</h3>
             <button type="button" class="btn-close-panel" id="closeMoviePanel" aria-label="Close"><i class="bi bi-x-lg"></i></button>
@@ -292,10 +292,10 @@
     </div>
     <div class="movie-detail-backdrop" id="movieDetailBackdrop" aria-hidden="true"></div>
 
-    <div class="modal-overlay" id="datasetModal" aria-hidden="true">
+    <div class="modal-overlay" id="datasetModal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="datasetModalTitle">
         <div class="modal-content">
             <div class="modal-header">
-                <h3><i class="bi bi-info-circle"></i> Dataset Information</h3>
+                <h3 id="datasetModalTitle"><i class="bi bi-info-circle"></i> Dataset Information</h3>
                 <button type="button" class="btn-close-panel" id="closeDatasetModal" aria-label="Close"><i class="bi bi-x-lg"></i></button>
             </div>
             <div class="modal-body" id="datasetModalBody">
