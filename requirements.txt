@@ -1,0 +1,5 @@
+flask
+pandas
+
+# Optional: only needed for schema/movie_analytics.sql and database/load_clean_data.py
+# mysql-connector-python
