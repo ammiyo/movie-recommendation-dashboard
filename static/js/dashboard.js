@@ -182,6 +182,53 @@ function destroyChart(id) {
     }
 }
 
+function getChartHost(id) {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    return el.closest(".chart-container, .treemap-container, .heatmap-wrap") || el.parentElement;
+}
+
+function showChartMessage(id, message) {
+    const host = getChartHost(id);
+    if (!host) return;
+    let msg = host.querySelector(":scope > .chart-empty");
+    if (!msg) {
+        msg = document.createElement("div");
+        msg.className = "chart-empty";
+        host.appendChild(msg);
+    }
+    msg.textContent = message;
+    msg.hidden = false;
+    host.querySelectorAll("canvas").forEach((c) => { c.style.display = "none"; });
+}
+
+function hideChartMessage(id) {
+    const host = getChartHost(id);
+    if (!host) return;
+    const msg = host.querySelector(":scope > .chart-empty");
+    if (msg) msg.hidden = true;
+    host.querySelectorAll("canvas").forEach((c) => { c.style.display = ""; });
+}
+
+function hasSeriesData(data) {
+    if (!data) return false;
+    if (Array.isArray(data.labels)) return data.labels.length > 0;
+    if (Array.isArray(data.points)) return data.points.length > 0;
+    if (Array.isArray(data.genres)) return data.genres.length > 0;
+    if (Array.isArray(data.values)) return data.values.length > 0;
+    return false;
+}
+
+async function runChartRender(id, renderer) {
+    hideChartMessage(id);
+    try {
+        await renderer();
+    } catch (e) {
+        console.error(id + " error:", e);
+        showChartMessage(id, "Unable to load this chart.");
+    }
+}
+
 function showLoading(show) {
     const el = document.getElementById("loadingOverlay");
     if (el) {
@@ -334,6 +381,10 @@ function closeMoviePanel() {
 async function renderTopRated() {
     destroyChart("topRatedChart");
     const data = await fetchJson(apiUrl("/api/top-rated"));
+    if (!hasSeriesData(data)) {
+        showChartMessage("topRatedChart", "No data for current filters.");
+        return;
+    }
     const counts = data.counts || data.values.map(() => "");
     const movieIds = data.movie_ids || [];
     const releaseYears = data.release_years || [];
@@ -381,7 +432,7 @@ async function renderTopRated() {
                 },
             },
             scales: {
-                x: { min: 3.2, max: 5, grid: { color: "rgba(255,255,255,0.06)" } },
+                x: { grid: { color: "rgba(255,255,255,0.06)" } },
                 y: { grid: { display: false } },
             },
         },
@@ -407,6 +458,10 @@ async function renderTopRated() {
 async function renderMostRated() {
     destroyChart("mostRatedChart");
     const data = await fetchJson(apiUrl("/api/most-rated"));
+    if (!hasSeriesData(data)) {
+        showChartMessage("mostRatedChart", "No data for current filters.");
+        return;
+    }
     const movieIds = data.movie_ids || [];
     const avgRatings = data.avg_ratings || [];
     const genresList = data.genres || [];
@@ -485,6 +540,14 @@ async function renderMostRated() {
 async function renderMoviesPerYear() {
     destroyChart("moviesYearChart");
     const data = await fetchJson(apiUrl("/api/movies-per-year"));
+    if (!hasSeriesData(data)) {
+        showChartMessage("moviesYearChart", "No data for current filters.");
+        const annEl = document.getElementById("moviesYearAnnotation");
+        const insightEl = document.getElementById("insightMoviesYear");
+        if (annEl) annEl.style.display = "none";
+        if (insightEl) insightEl.textContent = "";
+        return;
+    }
     const peakYear = data.peak_year;
     const annEl = document.getElementById("moviesYearAnnotation");
     const insightEl = document.getElementById("insightMoviesYear");
@@ -559,9 +622,13 @@ let activeCrossFilterGenre = null;
 async function renderGenreTreemap() {
     activeCrossFilterGenre = getFilterParams().genre || null;
     const data = await fetchJson(apiUrl("/api/genre-popularity"));
-    const total = data.values.reduce((a, b) => a + b, 0);
     const container = document.getElementById("genreTreemap");
     container.innerHTML = "";
+    if (!hasSeriesData(data)) {
+        showChartMessage("genreTreemap", "No data for current filters.");
+        return;
+    }
+    const total = data.values.reduce((a, b) => a + b, 0);
 
     data.labels.forEach((label, i) => {
         const value = data.values[i];
@@ -591,6 +658,10 @@ async function renderGenreTreemap() {
 async function renderAvgGenre() {
     destroyChart("avgGenreChart");
     const data = await fetchJson(apiUrl("/api/avg-rating-genre"));
+    if (!hasSeriesData(data)) {
+        showChartMessage("avgGenreChart", "No data for current filters.");
+        return;
+    }
     const ctx = document.getElementById("avgGenreChart").getContext("2d");
     const gradient = ctx.createLinearGradient(0, 0, 400, 0);
     gradient.addColorStop(0, "#FF4B4B");
@@ -626,8 +697,6 @@ async function renderAvgGenre() {
             },
             scales: {
                 x: {
-                    min: 3,
-                    max: 5,
                     grid: { color: "rgba(255,255,255,0.06)" },
                 },
                 y: { grid: { display: false } },
@@ -658,6 +727,10 @@ async function renderAvgGenre() {
 async function renderRatingDist() {
     destroyChart("ratingDistChart");
     const data = await fetchJson(apiUrl("/api/rating-distribution"));
+    if (!hasSeriesData(data)) {
+        showChartMessage("ratingDistChart", "No data for current filters.");
+        return;
+    }
     const total = data.values.reduce((a, b) => a + b, 0);
     const percentages = data.values.map((v) => (total ? ((v / total) * 100).toFixed(1) : 0));
 
@@ -735,6 +808,10 @@ async function renderRatingDist() {
 async function renderUserActivity() {
     destroyChart("userActivityChart");
     const data = await fetchJson(apiUrl("/api/user-activity-distribution"));
+    if (!hasSeriesData(data)) {
+        showChartMessage("userActivityChart", "No data for current filters.");
+        return;
+    }
     const ctx = document.getElementById("userActivityChart")?.getContext("2d");
     if (!ctx) return;
     chartInstances.userActivityChart = new Chart(ctx, {
@@ -772,8 +849,12 @@ async function renderMovieAgeRating() {
     destroyChart("movieAgeRatingChart");
     const res = await fetchJson(apiUrl("/api/movie-age-rating"));
     const points = res.points || [];
+    if (!points.length) {
+        showChartMessage("movieAgeRatingChart", "No data for current filters.");
+        return;
+    }
     const ctx = document.getElementById("movieAgeRatingChart")?.getContext("2d");
-    if (!ctx || !points.length) return;
+    if (!ctx) return;
     chartInstances.movieAgeRatingChart = new Chart(ctx, {
         type: "scatter",
         data: {
@@ -809,7 +890,7 @@ async function renderMovieAgeRating() {
             },
             scales: {
                 x: { title: { display: true, text: "Release Year" }, grid: { color: "rgba(255,255,255,0.06)" } },
-                y: { title: { display: true, text: "Average Rating" }, min: 2.5, max: 5, grid: { color: "rgba(255,255,255,0.06)" } },
+                y: { title: { display: true, text: "Average Rating" }, grid: { color: "rgba(255,255,255,0.06)" } },
             },
         },
     });
@@ -820,6 +901,11 @@ async function renderGenreHeatmap() {
     const data = await fetchJson(apiUrl("/api/genre-rating-heatmap"));
     const container = document.getElementById("genreHeatmap");
     if (!container) return;
+    if (!hasSeriesData(data)) {
+        container.innerHTML = "";
+        showChartMessage("genreHeatmap", "No data for current filters.");
+        return;
+    }
     const maxVal = Math.max(...(data.data || []).flat(), 1);
     const cols = data.columns || [1, 2, 3, 4, 5];
     let html = '<table class="heatmap-table"><thead><tr><th>Genre</th>';
@@ -843,6 +929,10 @@ async function renderGenreHeatmap() {
 async function renderGenreEngagement() {
     destroyChart("genreEngagementChart");
     const data = await fetchJson(apiUrl("/api/genre-engagement"));
+    if (!hasSeriesData(data)) {
+        showChartMessage("genreEngagementChart", "No data for current filters.");
+        return;
+    }
     const ctx = document.getElementById("genreEngagementChart")?.getContext("2d");
     const avgRatings = data.avg_ratings || [];
     if (!ctx) return;
@@ -892,10 +982,14 @@ async function renderBubbleChart() {
     destroyChart("bubbleChart");
     const res = await fetchJson(apiUrl("/api/movie-popularity-rating-bubble"));
     const points = res.points || [];
+    if (!points.length) {
+        showChartMessage("bubbleChart", "No data for current filters.");
+        return;
+    }
     const avgY = res.avg_rating != null ? res.avg_rating : points.length ? points.reduce((s, p) => s + p.y, 0) / points.length : 3.5;
     const avgX = res.avg_count != null ? res.avg_count : points.length ? Math.round(points.reduce((s, p) => s + p.x, 0) / points.length) : 100;
     const ctx = document.getElementById("bubbleChart")?.getContext("2d");
-    if (!ctx || !points.length) return;
+    if (!ctx) return;
     const maxR = Math.max(...points.map((p) => p.x), 1);
     chartInstances.bubbleChart = new Chart(ctx, {
         type: "bubble",
@@ -947,8 +1041,6 @@ async function renderBubbleChart() {
                 },
                 y: {
                     title: { display: true, text: "Average Rating" },
-                    min: 2.5,
-                    max: 5,
                     grid: { color: "rgba(255,255,255,0.06)" },
                 },
             },
@@ -1002,17 +1094,17 @@ async function refreshAllCharts() {
         await Promise.all([
             loadKpis(),
             loadKeyInsights(),
-            renderTopRated(),
-            renderMostRated(),
-            renderMoviesPerYear(),
-            renderMovieAgeRating(),
-            renderGenreTreemap(),
-            renderAvgGenre(),
-            renderGenreEngagement(),
-            renderRatingDist(),
-            renderUserActivity(),
-            renderGenreHeatmap(),
-            renderBubbleChart(),
+            runChartRender("topRatedChart", renderTopRated),
+            runChartRender("mostRatedChart", renderMostRated),
+            runChartRender("moviesYearChart", renderMoviesPerYear),
+            runChartRender("movieAgeRatingChart", renderMovieAgeRating),
+            runChartRender("genreTreemap", renderGenreTreemap),
+            runChartRender("avgGenreChart", renderAvgGenre),
+            runChartRender("genreEngagementChart", renderGenreEngagement),
+            runChartRender("ratingDistChart", renderRatingDist),
+            runChartRender("userActivityChart", renderUserActivity),
+            runChartRender("genreHeatmap", renderGenreHeatmap),
+            runChartRender("bubbleChart", renderBubbleChart),
         ]);
     } catch (e) {
         console.error("Refresh error:", e);
