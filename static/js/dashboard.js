@@ -32,6 +32,48 @@ Chart.defaults.transition = {
     duration: 400,
 };
 
+function isLightTheme() {
+    return document.body.classList.contains("light-theme");
+}
+
+function getChartTheme() {
+    if (isLightTheme()) {
+        return {
+            tick: "#5C5E6B",
+            grid: "rgba(0,0,0,0.08)",
+            border: "rgba(0,0,0,0.12)",
+            label: "#1A1D29",
+            quadrantLine: "rgba(0,0,0,0.25)",
+            quadrantText: "rgba(26, 29, 41, 0.55)",
+        };
+    }
+    return {
+        tick: COLORS.textSecondary,
+        grid: "rgba(255,255,255,0.06)",
+        border: "rgba(255,255,255,0.08)",
+        label: COLORS.textPrimary,
+        quadrantLine: "rgba(255,255,255,0.25)",
+        quadrantText: "rgba(255,255,255,0.4)",
+    };
+}
+
+function applyChartTheme() {
+    const theme = getChartTheme();
+    Chart.defaults.color = theme.tick;
+    Chart.defaults.borderColor = theme.border;
+    Object.keys(chartInstances).forEach((id) => {
+        const chart = chartInstances[id];
+        if (!chart || !chart.options) return;
+        const scales = chart.options.scales || {};
+        Object.keys(scales).forEach((axis) => {
+            if (scales[axis].grid) scales[axis].grid.color = theme.grid;
+            if (scales[axis].ticks) scales[axis].ticks.color = theme.tick;
+            if (scales[axis].title) scales[axis].title.color = theme.tick;
+        });
+        chart.update("none");
+    });
+}
+
 const PALETTE = [
     COLORS.primary,
     COLORS.secondary,
@@ -400,7 +442,7 @@ async function renderTopRated() {
                 },
             },
             scales: {
-                x: { min: 3.2, max: 5, grid: { color: "rgba(255,255,255,0.06)" } },
+                x: { min: 3.2, max: 5, grid: { color: getChartTheme().grid } },
                 y: { grid: { display: false } },
             },
         },
@@ -409,7 +451,7 @@ async function renderTopRated() {
             afterDatasetsDraw(chart) {
                 const meta = chart.getDatasetMeta(0);
                 chart.ctx.font = "12px DM Sans";
-                chart.ctx.fillStyle = COLORS.textPrimary;
+                chart.ctx.fillStyle = getChartTheme().label;
                 meta.data.forEach((bar, i) => {
                     chart.ctx.fillText(data.values[i].toFixed(1), bar.x + 8, bar.y + 4);
                 });
@@ -472,7 +514,7 @@ async function renderMostRated() {
                 },
             },
             scales: {
-                x: { grid: { color: "rgba(255,255,255,0.06)" } },
+                x: { grid: { color: getChartTheme().grid } },
                 y: { grid: { display: false } },
             },
         },
@@ -562,7 +604,7 @@ async function renderMoviesPerYear() {
                 },
             },
             scales: {
-                y: { grid: { color: "rgba(255,255,255,0.06)" } },
+                y: { grid: { color: getChartTheme().grid } },
                 x: {
                     grid: { display: false },
                     ticks: { maxTicksLimit: 14, maxRotation: 45 },
@@ -647,7 +689,7 @@ async function renderAvgGenre() {
                 x: {
                     min: 3,
                     max: 5,
-                    grid: { color: "rgba(255,255,255,0.06)" },
+                    grid: { color: getChartTheme().grid },
                 },
                 y: { grid: { display: false } },
             },
@@ -657,7 +699,7 @@ async function renderAvgGenre() {
             afterDatasetsDraw(chart) {
                 const meta = chart.getDatasetMeta(0);
                 chart.ctx.font = "12px DM Sans";
-                chart.ctx.fillStyle = COLORS.textPrimary;
+                chart.ctx.fillStyle = getChartTheme().label;
                 meta.data.forEach((bar, i) => {
                     const value = data.values[i];
                     const x = bar.x + 8;
@@ -728,7 +770,7 @@ async function renderRatingDist() {
                 },
             },
             scales: {
-                y: { grid: { color: "rgba(255,255,255,0.06)" } },
+                y: { grid: { color: getChartTheme().grid } },
                 x: { grid: { display: false } },
             },
         },
@@ -737,7 +779,7 @@ async function renderRatingDist() {
             afterDatasetsDraw(chart) {
                 const meta = chart.getDatasetMeta(0);
                 chart.ctx.font = "11px DM Sans";
-                chart.ctx.fillStyle = COLORS.textPrimary;
+                chart.ctx.fillStyle = getChartTheme().label;
                 meta.data.forEach((bar, i) => {
                     const pct = percentages[i] + "%";
                     const x = bar.x;
@@ -779,7 +821,7 @@ async function renderUserActivity() {
                 },
             },
             scales: {
-                y: { grid: { color: "rgba(255,255,255,0.06)" } },
+                y: { grid: { color: getChartTheme().grid } },
                 x: { grid: { display: false } },
             },
         },
@@ -875,8 +917,8 @@ async function renderMovieAgeRating() {
                 },
             },
             scales: {
-                x: { title: { display: true, text: "Release Year" }, grid: { color: "rgba(255,255,255,0.06)" } },
-                y: { title: { display: true, text: "Average Rating" }, min: 2.5, max: 5, grid: { color: "rgba(255,255,255,0.06)" } },
+                x: { title: { display: true, text: "Release Year" }, grid: { color: getChartTheme().grid } },
+                y: { title: { display: true, text: "Average Rating" }, min: 2.5, max: 5, grid: { color: getChartTheme().grid } },
             },
         },
     });
@@ -947,7 +989,7 @@ async function renderGenreEngagement() {
                 },
             },
             scales: {
-                x: { grid: { color: "rgba(255,255,255,0.06)" } },
+                x: { grid: { color: getChartTheme().grid } },
                 y: { grid: { display: false } },
             },
         },
@@ -1009,14 +1051,14 @@ async function renderBubbleChart() {
             scales: {
                 x: {
                     title: { display: true, text: "Total Ratings" },
-                    grid: { color: "rgba(255,255,255,0.06)" },
+                    grid: { color: getChartTheme().grid },
                     min: 0,
                 },
                 y: {
                     title: { display: true, text: "Average Rating" },
                     min: 2.5,
                     max: 5,
-                    grid: { color: "rgba(255,255,255,0.06)" },
+                    grid: { color: getChartTheme().grid },
                 },
             },
         },
@@ -1036,7 +1078,7 @@ async function renderBubbleChart() {
                 const top = chartArea.top;
                 const bottom = chartArea.bottom;
                 ctx.save();
-                ctx.strokeStyle = "rgba(255,255,255,0.25)";
+                ctx.strokeStyle = getChartTheme().quadrantLine;
                 ctx.lineWidth = 1;
                 ctx.setLineDash([4, 4]);
                 ctx.beginPath();
@@ -1049,7 +1091,7 @@ async function renderBubbleChart() {
                 ctx.stroke();
                 ctx.setLineDash([]);
                 ctx.font = "10px DM Sans";
-                ctx.fillStyle = "rgba(255,255,255,0.4)";
+                ctx.fillStyle = getChartTheme().quadrantText;
                 ctx.textAlign = "center";
                 const pad = 6;
                 ctx.fillText("Blockbusters", (xPixel + right) / 2, (top + yPixel) / 2 - pad);
@@ -1362,6 +1404,7 @@ function initMobileNav() {
 function initTheme() {
     const stored = localStorage.getItem("dashboard-theme");
     if (stored === "light") document.body.classList.add("light-theme");
+    applyChartTheme();
     const btn = document.getElementById("themeToggle");
     if (btn) {
         btn.addEventListener("click", () => {
@@ -1369,6 +1412,7 @@ function initTheme() {
             const isLight = document.body.classList.contains("light-theme");
             localStorage.setItem("dashboard-theme", isLight ? "light" : "dark");
             btn.querySelector("i").className = isLight ? "bi bi-sun-fill" : "bi bi-moon-stars-fill";
+            applyChartTheme();
         });
         btn.querySelector("i").className = document.body.classList.contains("light-theme") ? "bi bi-sun-fill" : "bi bi-moon-stars-fill";
     }
