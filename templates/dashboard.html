@@ -26,14 +26,20 @@
             <li class="nav-item"><a class="nav-link" href="#advanced-insights" data-section="advanced-insights"><i class="bi bi-lightning-fill"></i> Advanced Insights</a></li>
         </ul>
     </nav>
+    <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
 
     <div class="main-content">
         <header class="dashboard-header">
             <div class="header-gradient"></div>
             <div class="header-inner">
                 <div class="header-left">
-                    <h1 class="header-title">Movie Rating Analytics Dashboard</h1>
-                    <p class="header-subtitle">Insights from MovieLens Dataset</p>
+                    <button type="button" class="btn-icon sidebar-toggle" id="sidebarToggle" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <div class="header-titles">
+                        <h1 class="header-title">Movie Rating Analytics Dashboard</h1>
+                        <p class="header-subtitle">Insights from MovieLens Dataset</p>
+                    </div>
                 </div>
                 <div class="header-right header-actions">
                     <button type="button" class="btn-icon" id="datasetInfoBtn" title="Dataset information"><i class="bi bi-info-circle"></i></button>

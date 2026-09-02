@@ -160,6 +160,18 @@ body {
     padding: 0 32px;
 }
 
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.sidebar-toggle {
+    display: none;
+    flex-shrink: 0;
+}
+
 .header-title {
     font-size: 28px;
     font-weight: 700;
@@ -1011,9 +1023,26 @@ body.light-theme .modal-header { border-bottom-color: rgba(0,0,0,0.08); }
     .sidebar {
         transform: translateX(-100%);
         transition: transform 0.2s;
+        z-index: 110;
     }
     .sidebar.open {
         transform: translateX(0);
+    }
+    .sidebar-toggle {
+        display: inline-flex;
+    }
+    .sidebar-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        z-index: 105;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.2s, visibility 0.2s;
+    }
+    .sidebar-backdrop.show {
+        opacity: 1;
+        visibility: visible;
     }
     .main-content {
         margin-left: 0;
