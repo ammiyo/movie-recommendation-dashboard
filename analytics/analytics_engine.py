@@ -64,8 +64,8 @@ def _apply_filters(movies_df, ratings_df, merged_df, genre=None, year_min=None, 
     mg = merged_df.copy()
 
     if genre:
-        m = m[m["genres"].str.contains(genre, case=False, na=False)]
-        mg = mg[mg["genres"].str.contains(genre, case=False, na=False)]
+        m = m[m["genres"].str.contains(genre, case=False, na=False, regex=False)]
+        mg = mg[mg["genres"].str.contains(genre, case=False, na=False, regex=False)]
         r = r[r["movie_id"].isin(m["movie_id"])]
 
     if year_min is not None:
@@ -293,7 +293,7 @@ def search_movies(title="", year=None, genre=""):
     result = stats.copy()
 
     if title:
-        result = result[result["title"].str.contains(title, case=False, na=False)]
+        result = result[result["title"].str.contains(title, case=False, na=False, regex=False)]
 
     if year:
         try:
@@ -302,7 +302,7 @@ def search_movies(title="", year=None, genre=""):
             pass
 
     if genre:
-        result = result[result["genres"].str.contains(genre, case=False, na=False)]
+        result = result[result["genres"].str.contains(genre, case=False, na=False, regex=False)]
 
     result = result.sort_values("avg_rating", ascending=False)
 
@@ -342,7 +342,7 @@ def get_movie_insight(title):
     _, ratings_df, merged = _load_data()
 
     # Find best match (case-insensitive, pick highest rating-count)
-    mask    = merged["title"].str.contains(title, case=False, na=False)
+    mask    = merged["title"].str.contains(title, case=False, na=False, regex=False)
     matched = merged[mask]
 
     if matched.empty:
