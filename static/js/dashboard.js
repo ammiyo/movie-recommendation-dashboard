@@ -767,6 +767,54 @@ async function renderUserActivity() {
     });
 }
 
+// ── Most active users (horizontal bar, tooltip: count + avg rating given) ───
+async function renderTopUsers() {
+    destroyChart("topUsersChart");
+    const data = await fetchJson(apiUrl("/api/top-users"));
+    const avgRatings = data.avg_ratings || [];
+    const ctx = document.getElementById("topUsersChart")?.getContext("2d");
+    if (!ctx) return;
+    chartInstances.topUsersChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: data.labels,
+            datasets: [{
+                label: "Ratings",
+                data: data.values,
+                backgroundColor: COLORS.highlight + "cc",
+                borderColor: COLORS.highlight,
+                borderWidth: 1,
+                borderRadius: 6,
+            }],
+        },
+        options: {
+            indexAxis: "y",
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (item) => {
+                            const i = item.dataIndex;
+                            const avg = avgRatings[i] != null ? avgRatings[i] : "—";
+                            return [
+                                "User: " + (data.labels[i] || ""),
+                                "Total ratings: " + (item.raw != null ? item.raw.toLocaleString() : "—"),
+                                "Average rating given: " + avg,
+                            ];
+                        },
+                    },
+                },
+            },
+            scales: {
+                x: { grid: { color: "rgba(255,255,255,0.06)" }, beginAtZero: true },
+                y: { grid: { display: false } },
+            },
+        },
+    });
+}
+
 // ── Movie age vs rating (scatter) ───────────────────────────────────────────
 async function renderMovieAgeRating() {
     destroyChart("movieAgeRatingChart");
@@ -1011,6 +1059,7 @@ async function refreshAllCharts() {
             renderGenreEngagement(),
             renderRatingDist(),
             renderUserActivity(),
+            renderTopUsers(),
             renderGenreHeatmap(),
             renderBubbleChart(),
         ]);
@@ -1209,6 +1258,7 @@ function exportChartCSV(chartId, dataEndpoint) {
         "movies-per-year": "/api/movies-per-year",
         "avgGenreChart": "/api/avg-rating-genre",
         "bubbleChart": "/api/movie-popularity-rating-bubble",
+        "topUsersChart": "/api/top-users",
     };
     const path = dataEndpoint ? "/api/" + dataEndpoint : (endpoints[chartId] || "/api/top-rated");
     const url = apiUrl(path);
