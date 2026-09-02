@@ -767,6 +767,7 @@ body.light-theme .insight-skeleton { background: linear-gradient(90deg, rgba(0,0
     padding: 12px 14px;
     font-size: var(--font-small);
     font-weight: 600;
+    font-family: inherit;
     color: var(--text-primary);
     cursor: pointer;
     transition: transform 0.15s, filter 0.15s;
@@ -774,6 +775,8 @@ body.light-theme .insight-skeleton { background: linear-gradient(90deg, rgba(0,0
     flex-direction: column;
     justify-content: flex-end;
     flex: 1 1 auto;
+    border: none;
+    text-align: left;
 }
 
 .treemap-block:hover {
@@ -782,6 +785,21 @@ body.light-theme .insight-skeleton { background: linear-gradient(90deg, rgba(0,0
 }
 
 .treemap-block.cross-filter-active {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.treemap-block:focus-visible,
+.btn-icon:focus-visible,
+.btn-export:focus-visible,
+.btn-search:focus-visible,
+.btn-reset-filters:focus-visible,
+.btn-chart-export:focus-visible,
+.btn-close-panel:focus-visible,
+.filter-select:focus-visible,
+.filter-input:focus-visible,
+.search-input:focus-visible,
+.autocomplete-item:focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 2px;
 }
