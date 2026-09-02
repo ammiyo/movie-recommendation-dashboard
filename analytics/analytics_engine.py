@@ -599,6 +599,66 @@ def get_movie_popularity_rating_bubble(genre=None, year_min=None, year_max=None,
     }
 
 
+def get_similar_movies(movie_id, limit=5):
+    """
+    Return movies that share genres with the selected title.
+    Similarity is Jaccard overlap of genre sets; ties prefer more-rated movies.
+    Returns None if the movie_id is unknown.
+    """
+    movies_df, ratings_df, _ = _load_data()
+    movie_id = int(movie_id)
+    target = movies_df[movies_df["movie_id"] == movie_id]
+    if target.empty:
+        return None
+
+    target_genres = {
+        genre.strip()
+        for genre in str(target.iloc[0].get("genres") or "").split("|")
+        if genre.strip()
+    }
+    if not target_genres:
+        return []
+
+    rating_stats = (
+        ratings_df.groupby("movie_id")["rating"]
+        .agg(total_ratings="count", avg_rating="mean")
+    )
+    candidates = movies_df[movies_df["movie_id"] != movie_id].copy()
+
+    def jaccard(genres_value):
+        genres = {
+            genre.strip()
+            for genre in str(genres_value or "").split("|")
+            if genre.strip()
+        }
+        if not genres:
+            return 0.0
+        union = target_genres | genres
+        return len(target_genres & genres) / len(union) if union else 0.0
+
+    candidates["similarity"] = candidates["genres"].map(jaccard)
+    candidates = candidates[candidates["similarity"] > 0]
+    candidates = candidates.join(rating_stats, on="movie_id")
+    candidates["total_ratings"] = candidates["total_ratings"].fillna(0)
+    candidates["avg_rating"] = candidates["avg_rating"].fillna(0)
+    candidates = candidates.sort_values(
+        ["similarity", "total_ratings"], ascending=False
+    ).head(limit)
+
+    return [
+        {
+            "movie_id": int(row["movie_id"]),
+            "title": str(row["title"]),
+            "release_year": int(row["release_year"]) if pd.notna(row["release_year"]) else None,
+            "genres": str(row["genres"]) if pd.notna(row["genres"]) else "",
+            "avg_rating": round(float(row["avg_rating"]), 2) if row["total_ratings"] else None,
+            "total_ratings": int(row["total_ratings"]),
+            "similarity": round(float(row["similarity"]), 3),
+        }
+        for _, row in candidates.iterrows()
+    ]
+
+
 def get_dataset_info():
     """Static dataset metadata for info modal."""
     movies_df, ratings_df, _ = _load_data()

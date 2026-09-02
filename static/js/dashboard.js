@@ -354,9 +354,46 @@ async function openMovieDetail(movieId) {
         requestAnimationFrame(() => {
             requestAnimationFrame(() => renderMovieDetailCharts(distData, timelineData));
         });
+        loadSimilarMovies(movieId);
     } catch (e) {
         console.error("Movie detail error:", e);
     }
+}
+
+function renderSimilarMovies(items) {
+    const list = document.getElementById("similarMoviesList");
+    const empty = document.getElementById("similarMoviesEmpty");
+    if (!list) return;
+    list.innerHTML = "";
+    if (!items || !items.length) {
+        if (empty) empty.style.display = "block";
+        return;
+    }
+    if (empty) empty.style.display = "none";
+    items.forEach((movie) => {
+        const li = document.createElement("li");
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "similar-movie-btn";
+        const year = movie.release_year != null ? " (" + movie.release_year + ")" : "";
+        btn.textContent = movie.title + year;
+        btn.addEventListener("click", () => openMovieDetail(movie.movie_id));
+        li.appendChild(btn);
+        list.appendChild(li);
+    });
+}
+
+function loadSimilarMovies(movieId) {
+    const empty = document.getElementById("similarMoviesEmpty");
+    const list = document.getElementById("similarMoviesList");
+    if (list) list.innerHTML = "";
+    if (empty) empty.style.display = "none";
+    fetchJson("/api/movie-similar/" + movieId)
+        .then((data) => renderSimilarMovies(data.movies || []))
+        .catch((e) => {
+            console.error("Similar movies error:", e);
+            renderSimilarMovies([]);
+        });
 }
 
 function renderMovieDetailCharts(distData, timelineData) {
