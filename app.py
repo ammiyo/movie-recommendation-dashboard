@@ -25,6 +25,7 @@ from analytics.analytics_engine import (
     get_genre_engagement,
     get_dataset_info,
     get_movie_popularity_rating_bubble,
+    get_similar_movies,
 )
 
 app = Flask(__name__)
@@ -230,6 +231,14 @@ def movie_detail(movie_id):
     if result is None:
         return jsonify({"error": "Movie not found"}), 404
     return jsonify(result)
+
+
+@app.route("/api/movie-similar/<int:movie_id>")
+def movie_similar(movie_id):
+    result = get_similar_movies(movie_id)
+    if result is None:
+        return jsonify({"error": "Movie not found"}), 404
+    return jsonify({"movies": result})
 
 
 @app.route("/api/movie-rating-distribution/<int:movie_id>")
