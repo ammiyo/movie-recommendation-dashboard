@@ -1242,6 +1242,45 @@ function exportReport() {
     a.click();
 }
 
+// ── Mobile sidebar ──────────────────────────────────────────────────────────
+function isMobileNav() {
+    return window.matchMedia("(max-width: 768px)").matches;
+}
+
+function setSidebarOpen(open) {
+    const sidebar = document.getElementById("sidebar");
+    const backdrop = document.getElementById("sidebarBackdrop");
+    const toggle = document.getElementById("sidebarToggle");
+    if (!sidebar) return;
+    sidebar.classList.toggle("open", !!open);
+    if (backdrop) {
+        backdrop.classList.toggle("show", !!open);
+        backdrop.setAttribute("aria-hidden", open ? "false" : "true");
+    }
+    if (toggle) {
+        toggle.setAttribute("aria-expanded", open ? "true" : "false");
+        toggle.setAttribute("aria-label", open ? "Close navigation" : "Open navigation");
+    }
+}
+
+function initMobileNav() {
+    const toggle = document.getElementById("sidebarToggle");
+    const backdrop = document.getElementById("sidebarBackdrop");
+    toggle?.addEventListener("click", () => {
+        const sidebar = document.getElementById("sidebar");
+        setSidebarOpen(!sidebar?.classList.contains("open"));
+    });
+    backdrop?.addEventListener("click", () => setSidebarOpen(false));
+    document.querySelectorAll(".sidebar-nav .nav-link").forEach((link) => {
+        link.addEventListener("click", () => {
+            if (isMobileNav()) setSidebarOpen(false);
+        });
+    });
+    window.addEventListener("resize", () => {
+        if (!isMobileNav()) setSidebarOpen(false);
+    });
+}
+
 // ── Theme toggle ────────────────────────────────────────────────────────────
 function initTheme() {
     const stored = localStorage.getItem("dashboard-theme");
@@ -1331,6 +1370,7 @@ function initFilters() {
     document.addEventListener("click", () => document.querySelectorAll(".chart-export-wrap.open").forEach((w) => w.classList.remove("open")));
 
     initTheme();
+    initMobileNav();
     window.addEventListener("scroll", updateSidebarActive);
 }
 
