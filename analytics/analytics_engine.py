@@ -1,6 +1,4 @@
 import pandas as pd
-import mysql.connector
-from mysql.connector import Error
 
 # -------------------------------------------------------
 # Database Configuration
@@ -16,6 +14,13 @@ DB_CONFIG = {
 
 def get_connection():
     """Return a live MySQL connection (used by Flask API layer)."""
+    try:
+        import mysql.connector
+    except ImportError as exc:
+        raise ImportError(
+            "mysql-connector-python is required for database connections. "
+            "Install it with: pip install mysql-connector-python"
+        ) from exc
     return mysql.connector.connect(**DB_CONFIG)
 
 
