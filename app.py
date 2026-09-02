@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask, jsonify, render_template, request
 from analytics.analytics_engine import (
     get_top_rated_movies,
@@ -32,9 +34,7 @@ app = Flask(__name__)
 
 @app.before_request
 def log_request_info():
-    app.logger.debug("Request Headers: %s", request.headers)
-    app.logger.debug("Request Body: %s", request.get_data())
-    print(f"DEBUG: {request.method} {request.path} {request.args}")
+    app.logger.info("%s %s", request.method, request.path)
 
 
 
@@ -324,4 +324,7 @@ def movie_insight():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    debug = os.environ.get("FLASK_DEBUG", "").lower() in ("1", "true", "yes")
+    host = os.environ.get("FLASK_HOST", "127.0.0.1")
+    port = int(os.environ.get("FLASK_PORT", "5000"))
+    app.run(debug=debug, host=host, port=port)
